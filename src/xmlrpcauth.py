@@ -11,7 +11,7 @@ class XmlRpcAuth(xmlrpc.XMLRPC):
         self._user = user
         self._password = password
         self._auth = (self._user !='')
-        xmlrpc.XMLRPC.__init__(self)
+        xmlrpc.XMLRPC.__init__(self, allowNone=True)
 
     def render(self, request):
         if self._auth:
