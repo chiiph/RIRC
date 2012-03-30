@@ -11,7 +11,7 @@ from sqliter import SQLiter
 class RIRCProtocol(irc.IRCClient):
     def __init__(self):
         self._starting_query = {}
-        self._ping_lc = LoopingCall(self._heartbeat)
+        self._ping_lc = LoopingCall(self._self_heartbeat)
         self._host = ""
 
     def _get_nickname(self):
@@ -28,7 +28,7 @@ class RIRCProtocol(irc.IRCClient):
                                      "@",
                                      line)
 
-    def _heartbeat(self):
+    def _self_heartbeat(self):
         print "Pinging..."
         self.sendLine("PING %s" % (self._host,))
 

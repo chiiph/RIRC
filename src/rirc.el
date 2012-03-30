@@ -71,6 +71,9 @@
 (defvar rirc-mode-string nil
   "")
 
+(defvar rirc-channel-marked nil
+  "")
+
 (defun rirc-init ()
   ""
   (interactive)
@@ -95,6 +98,7 @@
   (make-local-variable 'rirc-current-channel)
   (make-local-variable 'rirc-current-channel-older-line)
   (make-local-variable 'rirc-mode-line)
+  (make-local-variable 'rirc-channel-marked)
   (run-hooks 'rirc-mode-hooks))
 
 (defun rirc-get-host ()
@@ -183,8 +187,7 @@
   (interactive)
   (xml-rpc-method-call
    (rirc-get-host)
-   'close rirc-current-network rirc-current-channel)
-  (kill-buffer))
+   'close rirc-current-network rirc-current-channel))
 
 (defun rirc-query (nick)
   (interactive "sQuery nick: ")
@@ -240,18 +243,28 @@
                   (rirc-mode)
                   (setq rirc-current-network (aref networks i))
                   (setq rirc-current-channel (aref channels j))
+                  (setq rirc-channel-marked t)
                   (end-of-buffer)
                   (if (not (search-backward rirc-separator nil t))
                       (insert (format "%s\n"
                                       rirc-separator)))
-                  (rirc-update-buffer t)))
+                  (rirc-update-buffer t))
+              (progn
+                (set-buffer (get-buffer (format "*rirc-%s*"
+                                                (aref channels j))))
+                (setq rirc-channel-marked t)))
             (setq j (+ 1 j)))
           (setq i (+ 1 i))))
       (dolist (buffer (buffer-list))
         (progn
           (set-buffer buffer)
           (if (eq major-mode 'rirc-mode)
-              (rirc-update-buffer))))
+              (progn
+                (if (not rirc-channel-marked)
+                    (kill-buffer buffer)
+                  (progn
+                    (rirc-update-buffer)
+                    (setq rirc-channel-marked nil)))))))
       (rirc-update-mode-line))))
 
 (defun rirc-insert-formatted-lines (lines on-beginning &optional initial)
