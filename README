@@ -1,0 +1,90 @@
+RIRC - Remove IRC for the masses
+
+Core:
+
+RIRC is a IRC client inspired in QuasselIRC but intended to be much
+more generic (I love Quassel, but I want the possibility to have a
+terminal client). That is why it has a XML-RPC interface that outputs
+JSON objects for ease of use.
+The idea is that you can put your RIRC core in a server wherever you
+want and then you can connect to it securely with any client that uses
+the XML-RPC interface.
+
+Dependencies:
+
+RIRC core uses the following tools:
+- Python 2.6
+- Twisted
+- Sqlite3
+- Gnutls
+- SimpleJSON
+
+Client:
+
+Right now there is only one client written for Emacs. I wanted to
+implement one with NCurses, but it seemed easier this way. The beauty
+of this is that you can implement a client in any platform that
+supports/has a lib for XML-RPC and SSL. So, if you've got a client
+implemented for this, please let me know!
+
+Using:
+
+Core configuration:
+
+The Core will look for the following files in the datadir:
+rirc.cfg (configuration, explanation bellow)
+rirc.pem
+rirc_priv.pem
+
+Example rirc.cfg
+
+-------------------------------------------------
+
+[General]
+UseAuth=true
+User=user
+Password=supersecret
+LeaveReason="RIRC - Remote IRC for the masses"
+
+[Freenode]
+SSL=true
+URL=irc.freenode.net
+Port=6697
+AutoJoin=#channel1,#channel2
+Nicks=nick1,nick2
+
+[OtherNetwork]
+SSL=true
+URL=irc.othernet.net
+Port=6697
+AutoJoin=#channel1,#channel2
+Nicks=nick1,nick2
+
+-------------------------------------------------
+
+To run the core, just clone the repo and run:
+
+python src/rirc.py /path/to/your/datadir
+
+The Emacs client depends on json.el and xml-rpc.el. You can find both
+of them in the following URLs:
+
+http://edward.oconnor.cx/2006/03/json.el
+http://www.emacswiki.org/emacs/XmlRpc
+
+After that, just put rirc.el in your load-path, add the following code
+to your .emacs:
+
+(require 'rirc)
+(setq rirc-host "myhost.com")
+(setq rirc-port "8080")
+(setq rirc-highlight-str "yournick")
+(setq rirc-cert "/path/to/rirc.pem")
+
+After that, you can just run M-x rirc-init, and that should be it.
+The code is a little ugly for now, I didn't spend much time
+documenting and making it pretty, but it works. If you want to improve
+it in any way, I'm always open to receiving patches.
+
+Creating a self-signed certificate:
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ~/.config/rirc/rirc_priv.pem -out ~/.config/rirc/rirc.pem
