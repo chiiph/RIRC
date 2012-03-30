@@ -98,8 +98,7 @@
   (run-hooks 'rirc-mode-hooks))
 
 (defun rirc-get-host ()
-  ;; (format "https://%s:%s/"
-  (format "http://%s:%s/"
+  (format "https://%s:%s/"
           rirc-host
           rirc-port))
 

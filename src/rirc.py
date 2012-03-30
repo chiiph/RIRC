@@ -165,10 +165,9 @@ class RIRC(XmlRpcAuth):
 
 if __name__ == "__main__":
     datadir = sys.argv[1]
-    # cert = path.join(datadir, "rirc.pem")
-    # priv = path.join(datadir, "rirc_priv.pem")
+    cert = path.join(datadir, "rirc.pem")
+    priv = path.join(datadir, "rirc_priv.pem")
     s = RIRC(datadir=datadir)
-    # sslContext = ssl.DefaultOpenSSLContextFactory(priv, cert)
-    # reactor.listenSSL(8080, server.Site(s), sslContext)
-    reactor.listenTCP(8080, server.Site(s))
+    sslContext = ssl.DefaultOpenSSLContextFactory(priv, cert)
+    reactor.listenSSL(8080, server.Site(s), sslContext)
     reactor.run()
