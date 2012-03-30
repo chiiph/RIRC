@@ -80,11 +80,13 @@ class RIRCProtocol(irc.IRCClient):
         pass
 
     def userQuit(self, user, quitMessage):
-        self.factory.db.add_line(time.time(),
-                                 self.factory.network.name,
-                                 channel,
-                                 "-",
-                                 "<== %s (%s)" % (user, quitMessage))
+        channels = self.factory.db.get_channels(self.factory.network.name)
+        for channel in channels:
+            self.factory.db.add_line(time.time(),
+                                     self.factory.network.name,
+                                     channel,
+                                     "-",
+                                     "<== %s (%s)" % (user, quitMessage))
 
     def userKicked(self, kickee, channel, kicker, message):
         pass
