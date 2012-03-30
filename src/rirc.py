@@ -10,7 +10,7 @@ import simplejson as json
 
 from xmlrpcauth import XmlRpcAuth
 from sqliter import SQLiter
-from network_secure import add_network, networks
+from network import add_network, networks
 
 class RIRC(XmlRpcAuth):
     def __init__(self, datadir = "datadir", user = "", password = ""):
