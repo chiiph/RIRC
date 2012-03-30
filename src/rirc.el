@@ -23,11 +23,11 @@
 (defvar rirc-highlight-str "chiiph"
   "")
 
-(defvar rirc-host "localhost"
-  "Host to which the client will connect")
+(defcustom rirc-host "localhost"
+  "*Host to which the client will connect")
 
-(defvar rirc-port "8080"
-  "Port used to connect")
+(defcustom rirc-port "8080"
+  "*Port used to connect")
 
 (defvar rirc-networks []
   "Network array")
@@ -49,8 +49,8 @@
 (defvar rirc-current-channel-older-line 0
   "Age of the older line in the buffer")
 
-(defvar rirc-cert "~/.config/rirc/rirc.pem"
-  "")
+(defcustom rirc-cert "~/.config/rirc/rirc.pem"
+  "*Certificate for the core")
 
 (defvar rirc-mode-map
   (let ((map (make-sparse-keymap)))
@@ -78,8 +78,8 @@
   ""
   (interactive)
   (save-excursion
-    (setq tls-program '((concat "gnutls-cli -p %p %h --protocols ssl3 --x509cafile "
-                                rirc-cert)))
+    (setq tls-program (list (concat "gnutls-cli -p %p %h --protocols ssl3 --x509cafile "
+                                    rirc-cert)))
     (setq xml-rpc-debug 0)
     (rirc-initial-fetch)
     (rirc-start-timer)))
