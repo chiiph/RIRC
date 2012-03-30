@@ -19,8 +19,13 @@ class RIRC(XmlRpcAuth):
         self._leave_reason = ""
         self._datadir = datadir
         self._db = SQLiter(self._datadir)
+        self._port = 0
         self.loadConfig(path.join(self._datadir,
                                   "rirc.cfg"))
+
+    def _get_port(self):
+        return self._port
+    port = property(_get_port)
 
     def loadConfig(self, path):
         self.config = ConfigParser()
@@ -28,6 +33,7 @@ class RIRC(XmlRpcAuth):
 
         for section in self.config.sections():
             if section == "General":
+                self._port = self.config.getint(section, "ServePort")
                 self._auth = self.config.getboolean(section, "UseAuth")
                 if(self._auth):
                     self._user = self.config.get(section, "User")
@@ -169,5 +175,5 @@ if __name__ == "__main__":
     priv = path.join(datadir, "rirc_priv.pem")
     s = RIRC(datadir=datadir)
     sslContext = ssl.DefaultOpenSSLContextFactory(priv, cert)
-    reactor.listenSSL(8080, server.Site(s), sslContext)
+    reactor.listenSSL(s.port, server.Site(s), sslContext)
     reactor.run()
