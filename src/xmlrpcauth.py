@@ -31,7 +31,10 @@ class XmlRpcAuth(xmlrpc.XMLRPC):
         request.content.seek(0, 0)
         args, functionPath = xmlrpclib.loads(request.content.read())
         try:
-            function = self._getFunction(functionPath)
+            if hasattr(self, "_getFunction"):
+                function = self._getFunction(functionPath)
+            else:
+                function = self.lookupProcedure(functionPath)
         except Fault, f:
             self._cbRender(f, request)
         else:
