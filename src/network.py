@@ -7,6 +7,7 @@ import time
 networks = {}
 
 from sqliter import SQLiter
+from diff_consts import Diff
 
 class RIRCProtocol(irc.IRCClient):
     def __init__(self):
@@ -121,8 +122,10 @@ class RIRCProtocol(irc.IRCClient):
 
     def irc_RPL_WHOISUSER(self, prefix, params):
         user = params[1]
+        channels = self.factory.db.get_channels(self.factory.network.name)
         if user in self._starting_query.keys() and \
-                self._starting_query[user]:
+                self._starting_query[user] and \
+                not user in channels:
             self.factory.db.add_line(time.time(),
                                      self.factory.network.name,
                                      "%s!%s@%s" % (params[1], params[2], params[3]),
@@ -139,12 +142,17 @@ class RIRCProtocol(irc.IRCClient):
     def irc_JOIN(self, prefix, params):
         print "JOIN", prefix, params
         self.factory.network.set_channel_enabled(params[0])
-        self.factory.db.add_line(time.time(),
+        now = time.time()
+        self.factory.db.add_line(now,
                                  self.factory.network.name,
                                  params[0],
                                  "-",
                                  "--> %s (%s)" % (prefix.split("!")[0],
                                                   prefix.split("!")[1]))
+        if prefix.split("!")[0] == self.factory.network.nick:
+            self.factory.db.add_diff(now, Diff.ADD_CHANNEL,
+                                     self.factory.network.name,
+                                     params[0])
 
     def irc_PART(self, prefix, params):
         print "PART", prefix, params

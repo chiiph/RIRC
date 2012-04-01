@@ -1,5 +1,7 @@
 import sqlite3
 from os import path
+from decimal import Decimal
+from diff_consts import Diff
 
 class SQLiter(object):
     def __init__(self, datadir = "datadir"):
@@ -15,14 +17,38 @@ class SQLiter(object):
     def _create(self):
         query = """create table if not exists data (
                      id integer primary key asc autoincrement,
-                     date string,
+                     date double precision,
                      network string,
                      source string,
                      channel string,
                      line string)"""
 
         self._conn.execute(query)
+        query = """create table if not exists diffs (
+                     id integer primary key asc autoincrement,
+                     date double precision,
+                     cmd string,
+                     arg1 string,
+                     arg2 string,
+                     arg3 string,
+                     arg4 string,
+                     arg5 string)"""
+        self._conn.execute(query)
         self._conn.commit()
+
+    def get_diffs(self, since):
+        query = """select distinct * from diffs where date > ?"""
+
+        diffs = []
+        cur = self._conn.cursor()
+        cur.execute(query, (since,))
+        now = Decimal(since)
+
+        for row in cur:
+            now = max(now, Decimal(row[1]))
+            diffs.append(list(row))
+
+        return diffs, now
 
     def get_networks(self):
         query = """select distinct network from data"""
@@ -71,6 +97,13 @@ class SQLiter(object):
         query = """insert into data(date,network,source,channel,line) values (?,?,?,?,?)"""
 
         self._conn.execute(query, (date, network, source, channel, line))
+        self._conn.commit()
+        self.add_diff(date, Diff.ADD_LINE, network, channel, source, line)
+
+    def add_diff(self, date, cmd, arg1="", arg2="", arg3="", arg4="", arg5=""):
+        query = """insert into diffs(date,cmd,arg1,arg2,arg3,arg4,arg5) values (?,?,?,?,?,?,?)"""
+
+        self._conn.execute(query, (date, cmd, arg1, arg2, arg3, arg4, arg5))
         self._conn.commit()
 
     def close(self, network, channel):

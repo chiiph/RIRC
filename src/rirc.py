@@ -169,6 +169,12 @@ class RIRC(XmlRpcAuth):
         if network in networks.keys():
             return networks[network].nick
 
+    def xmlrpc_get_diffs(self, since):
+        diffs, now = self._db.get_diffs(since)
+        print diffs, now
+        return json.dumps({"changes": diffs,
+                           "timestamp": now})
+
 if __name__ == "__main__":
     datadir = sys.argv[1]
     cert = path.join(datadir, "rirc.pem")
