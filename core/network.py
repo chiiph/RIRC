@@ -333,7 +333,7 @@ class Network(object):
                               self.name,
                               channel,
                               "-",
-                              "** You parted this channel **")
+                              "** You parted this channel (Not delivering %s)**" % ())
 
     def msg(self, user, message, length=None):
         self.protocol.msg(user.split("!")[0], message, length)

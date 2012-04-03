@@ -1,13 +1,16 @@
 import urwid
+import re
 
 from rirc_urwid_worker import RIRCWorkerThread
 from diff_consts import Diff
+from datetime import datetime
 
 class RIRCClient(object):
     def __init__(self):
         object.__init__(self)
 
         self._wins = []
+        self._nicks = {}
         self._current_buffer = None
         self._bootstrap = True
         self._palette = [
@@ -96,6 +99,10 @@ class RIRCClient(object):
                     self._show_buffers()
                 elif cmd == "/debug":
                     self._show_debug()
+                elif cmd == "/part":
+                    self._current_buffer.part()
+                elif cmd == "/close":
+                    self._current_buffer.close()
                 elif cmd.startswith("/join"):
                     parts = cmd.split(" ")
                     if len(parts) >= 2:
@@ -153,10 +160,16 @@ class RIRCClient(object):
                     if not (network, channel) in self._wins:
                         self._wins.append((network, channel))
                     if not key in self._channels.keys():
+                        nick = self._worker.get_nick(network)
+                        if nick:
+                            self._nicks[network] = nick
+                        else:
+                            self._debug(["WARNING: No nick for %s" % (network,)])
                         self._channels[key] = Channel(network, channel, self._worker,
                                                       self._status_line,
                                                       self._cmd_edit, self._footer,
-                                                      self._header)
+                                                      self._header,
+                                                      highlight = nick)
                     self._channels[key].append_new_lines(lines)
 
             self._bootstrap = False
@@ -181,7 +194,8 @@ class RIRCClient(object):
                             self._channels[key] = Channel(network, channel, self._worker,
                                                           self._status_line,
                                                           self._cmd_edit, self._footer,
-                                                          self._header)
+                                                          self._header,
+                                                          self._nicks[network])
                         self._channels[key].append_new_lines([(date, source, msg)])
                     elif cmd == Diff.ADD_CHANNEL:
                         self._debug(["ADD_CHANNEL %s - %s" % (diff[3], diff[4])])
@@ -192,7 +206,12 @@ class RIRCClient(object):
                         self._channels[key] = Channel(network, channel, self._worker,
                                                       self._status_line,
                                                       self._cmd_edit, self._footer,
-                                                      self._header)
+                                                      self._header,
+                                                      self._nicks[network])
+                    elif cmd == Diff.CLOSE_CHANNEL:
+                        self._debug(["CLOSE_CHANNEL %s - %s" % (diff[3], diff[4])])
+                        network = diff[3]
+                        channel = diff[4]
 
         if loop:
             loop.set_alarm_in(0.1, self._update)
@@ -224,7 +243,7 @@ class RIRCClient(object):
             self._current_buffer = self._channels[net+"@"+chan]
 
 class Channel(object):
-    def __init__(self, network, name, worker, status_line, cmd_line, footer, header):
+    def __init__(self, network, name, worker, status_line, cmd_line, footer, header, highlight=None):
         object.__init__(self)
         self._network = network
         self._name = name
@@ -239,6 +258,10 @@ class Channel(object):
 
         self._footer = footer
         self._header = header
+
+        self._highlight = highlight
+        if isinstance(self._highlight, str):
+            self._highlight = re.compile(self._highlight)
 
         self._init_gui()
 
@@ -264,9 +287,15 @@ class Channel(object):
         i = len(lines)
         while i > 0:
             i -= 1
-            self._gui_lines.append(urwid.Text(["%f - " % (lines[i][0],),
-                                               ('nick',"<%s>" % (lines[i][1],)),
-                                               ('highlight', " %s" % (lines[i][2],))]))
+            line = "%s" % (lines[i][2],)
+            nick = "<%s> " % (lines[i][1].split("!")[0],)
+            if nick != "<-> " and self._highlight and \
+                    self._highlight.match(lines[i][2]):
+                line = ('highlight', line)
+            self._gui_lines.append(urwid.Text(["%s - " % (datetime.fromtimestamp(lines[i][0])\
+                                                              .strftime("%d/%m/%y %H:%M:%S"),),
+                                               ('nick', nick),
+                                               line]))
 
     def send(self, msg):
         self._worker.send(self._network, self._name, msg)
@@ -275,7 +304,13 @@ class Channel(object):
         self._worker.join_channel(self._network, channel, key)
 
     def query(self, user):
-        self._worker.join_channel(self._network, user)
+        self._worker.query_user(self._network, user)
+
+    def part(self):
+        self._worker.part_channel(self._network, self._name)
+
+    def close(self):
+        self._worker.close_channel(self._network, self._name)
 
 if __name__ == "__main__":
     client = RIRCClient()

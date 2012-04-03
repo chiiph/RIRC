@@ -18,6 +18,8 @@ class RIRCWorkerThread(threading.Thread):
     DIFFS = 5
     JOIN = 6
     QUERY = 7
+    PART = 8
+    CLOSE = 9
     def __init__(self, debug = False):
         threading.Thread.__init__(self)
 
@@ -41,6 +43,8 @@ class RIRCWorkerThread(threading.Thread):
         self._debug_queue = []
 
         self._debug_terminal = debug
+
+        self._nicks = {}
 
         context = SSL.Context()
         context.load_verify_info(cafile="/home/chiiph/.config/rirc/rirc.pem")
@@ -120,6 +124,14 @@ class RIRCWorkerThread(threading.Thread):
             self._read_lock.release()
         return obj
 
+    def get_nick(self, network):
+        obj = None
+        if self._read_lock.acquire(False):
+            if network in self._nicks.keys():
+                obj = copy.copy(self._nicks[network])
+            self._read_lock.release()
+        return obj
+
     def stop(self):
         self._stop.set()
 
@@ -172,9 +184,17 @@ class RIRCWorkerThread(threading.Thread):
         self._schedule(self.JOIN, (network, channel, key))
         self._debug("Scheduling join %s - %s" % (network, channel))
 
-    def join_channel(self, network, user):
+    def query_user(self, network, user):
         self._schedule(self.QUERY, (network, user))
         self._debug("Scheduling query %s - %s" % (network, user))
+
+    def part_channel(self, network, channel):
+        self._schedule(self.PART, (network, channel))
+        self._debug("Scheduling part %s - %s" % (network, channel))
+
+    def close_channel(self, network, channel):
+        self._schedule(self.CLOSE, (network, channel))
+        self._debug("Scheduling close %s - %s" % (network, channel))
 
     def run(self):
         while True:
@@ -210,6 +230,8 @@ class RIRCWorkerThread(threading.Thread):
             elif stage == self.CHANNELS:
                 self._print("Stage is channels")
                 for network in data:
+                    self._nicks[network] = self._proxy.nick(network)
+                    self._debug("Nicks: %s" % (self._nicks,))
                     self._channels[network] = json.loads(self._proxy.get_channels(network))["channels"]
                     self._print(self._channels[network])
                     self.schedule_lines(network, self._channels[network])
@@ -249,6 +271,12 @@ class RIRCWorkerThread(threading.Thread):
             elif stage == self.QUERY:
                 network, user = data
                 self._proxy.query(network, user)
+            elif stage ==self.PART:
+                network, channel = data
+                self._proxy.leave(network, channel)
+            elif stage ==self.CLOSE:
+                network, channel = data
+                self._proxy.close(network, channel)
             self._read_lock.release()
             time.sleep(0.1)
 
