@@ -314,4 +314,4 @@ class Channel(object):
 
 if __name__ == "__main__":
     client = RIRCClient()
-    client.debug_run()
+    client.run()
