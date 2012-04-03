@@ -1,5 +1,4 @@
 import threading
-import simplejson as json
 import urwid
 import xmlrpclib
 import copy
@@ -7,6 +6,10 @@ import time
 import Queue
 from M2Crypto import m2xmlrpclib, SSL
 from decimal import Decimal
+try:
+    import simplejson as json
+except ImportError, e:
+    import json
 
 class RIRCWorkerThread(threading.Thread):
     IDLE = -1

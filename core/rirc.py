@@ -6,7 +6,10 @@ import sys
 
 from ConfigParser import ConfigParser
 from os import path
-import simplejson as json
+try:
+    import simplejson as json
+except ImportError, e:
+    import json
 
 from xmlrpcauth import XmlRpcAuth
 from sqliter import SQLiter
@@ -149,21 +152,18 @@ class RIRC(XmlRpcAuth):
 
     def xmlrpc_get_networks(self):
         print "Getting networks..."
-        return json.dumps({"networks": self._db.get_networks()},
-                          indent=' ')
+        return json.dumps({"networks": self._db.get_networks()})
 
     def xmlrpc_get_channels(self, network):
         return json.dumps({"network": network,
-                           "channels": self._db.get_channels(network)},
-                          indent=' ')
+                           "channels": self._db.get_channels(network)})
 
     def xmlrpc_get_lines(self, network, channel, offset, count, older_than = -1):
         return json.dumps({"network": network,
                            "channel": channel,
                            "lines": self._db.get_lines(network, channel,
                                                        offset, count,
-                                                       older_than)},
-                          indent=' ')
+                                                       older_than)})
 
     def xmlrpc_nick(self, network):
         global networks

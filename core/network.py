@@ -336,7 +336,7 @@ class Network(object):
                               "** You parted this channel (Not delivering %s)**" % ())
 
     def msg(self, user, message, length=None):
-        self.protocol.msg(user.split("!")[0], message, length)
+        self.protocol.msg(user.split("!")[0], message.decode('latin1').encode('latin1'), length)
         self._db.add_line(time.time(),
                           self.name,
                           user,

@@ -98,14 +98,24 @@ class SQLiter(object):
     def add_line(self, date, network, channel, source, line):
         query = """insert into data(date,network,source,channel,line) values (?,?,?,?,?)"""
 
-        self._conn.execute(query, (date, network, source, channel, line))
+        self._conn.execute(query, (date,
+                                   network.decode("utf-8"),
+                                   source.decode("utf-8"),
+                                   channel.decode("utf-8"),
+                                   line.decode("utf-8")))
         self._conn.commit()
         self.add_diff(date, Diff.ADD_LINE, network, channel, source, line)
 
     def add_diff(self, date, cmd, arg1="", arg2="", arg3="", arg4="", arg5=""):
         query = """insert into diffs(date,cmd,arg1,arg2,arg3,arg4,arg5) values (?,?,?,?,?,?,?)"""
 
-        self._conn.execute(query, (date, cmd, arg1, arg2, arg3, arg4, arg5))
+        self._conn.execute(query, (date,
+                                   cmd,
+                                   arg1.decode("utf-8"),
+                                   arg2.decode("utf-8"),
+                                   arg3.decode("utf-8"),
+                                   arg4.decode("utf-8"),
+                                   arg5.decode("utf-8")))
         self._conn.commit()
 
     def close(self, network, channel):
