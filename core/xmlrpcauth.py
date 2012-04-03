@@ -1,7 +1,5 @@
 # From http://code.activestate.com/recipes/526625-twisted-xml-rpc-server-with-basic-http-authenticat/
 
-from __future__ import unicode_literals
-
 import xmlrpclib
 from twisted.web import xmlrpc, server, http
 from twisted.internet import defer, protocol, reactor

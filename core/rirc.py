@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from twisted.web import xmlrpc, server, http
 from twisted.words.protocols import irc
 from twisted.internet import protocol, defer, reactor, ssl

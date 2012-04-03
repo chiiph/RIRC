@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import threading
 import simplejson as json
 import urwid
@@ -58,13 +56,13 @@ class RIRCWorkerThread(threading.Thread):
 
     def _print(self, msg):
         self._debug(msg)
-        if self._debug_terminal:
-            print msg
 
     def _debug(self, msg):
         self._debug_lock.acquire(True)
         self._debug_queue.append(msg)
         self._debug_lock.release()
+        if self._debug_terminal:
+            print msg
 
     def _reset(self):
         self._networks = []

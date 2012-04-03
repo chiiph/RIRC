@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import sqlite3
 from os import path
 from decimal import Decimal

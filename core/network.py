@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from twisted.words.protocols import irc
 from twisted.internet import protocol, reactor, ssl
 from twisted.internet.task import LoopingCall

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import urwid
 import re
 
@@ -300,7 +298,7 @@ class Channel(object):
                                                line]))
 
     def send(self, msg):
-        self._worker.send(self._network, self._name, msg)
+        self._worker.send(self._network, self._name, msg.decode('utf-8').encode('utf-8'))
 
     def join(self, channel, key):
         self._worker.join_channel(self._network, channel, key)
