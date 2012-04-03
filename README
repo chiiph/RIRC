@@ -64,7 +64,7 @@ Nicks=nick1,nick2
 
 To run the core, just clone the repo and run:
 
-python src/rirc.py /path/to/your/datadir
+python core/rirc.py /path/to/your/datadir
 
 The Emacs client depends on json.el and xml-rpc.el. You can find both
 of them in the following URLs:
