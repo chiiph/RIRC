@@ -150,6 +150,7 @@ class RIRC(XmlRpcAuth):
             networks[network].ping(user, text)
 
     def xmlrpc_get_networks(self):
+        print "Getting networks..."
         return json.dumps({"networks": self._db.get_networks()},
                           indent=' ')
 

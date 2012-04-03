@@ -49,7 +49,7 @@ class RIRCWorkerThread(threading.Thread):
         self._nicks = {}
 
         context = SSL.Context()
-        context.load_verify_info(cafile="/home/chiiph/.config/rirc/rirc.pem")
+        context.load_verify_info(cafile=str("/home/chiiph/.config/rirc/rirc.pem"))
         context.set_verify(SSL.verify_fail_if_no_peer_cert, 0)
         proxy = xmlrpclib.ServerProxy("https://chiiph:supersecret@tldr.com.ar:4343/", allow_none = True,
                                       transport=m2xmlrpclib.SSL_Transport(ssl_context=context))
@@ -226,7 +226,9 @@ class RIRCWorkerThread(threading.Thread):
                     self._send_lock.release()
             elif stage == self.NETWORKS:
                 self._print("Stage is networks")
-                self._networks = json.loads(self._proxy.get_networks())["networks"]
+                res = self._proxy.get_networks()
+                self._print(res)
+                self._networks = json.loads(res)["networks"]
                 self._print(self._networks)
                 self.schedule_channels(self._networks)
             elif stage == self.CHANNELS:

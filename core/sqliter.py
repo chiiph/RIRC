@@ -55,6 +55,8 @@ class SQLiter(object):
     def get_networks(self):
         query = """select distinct network from data"""
 
+        print "DB: Getting networks..."
+
         nets = []
         cur = self._conn.cursor()
         cur.execute(query)
