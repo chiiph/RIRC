@@ -34,6 +34,12 @@ class SQLiter(object):
                      arg4 string,
                      arg5 string)"""
         self._conn.execute(query)
+        query = """create table if not exists markers (
+                     id integer primary key asc autoincrement,
+                     date double precision,
+                     network string,
+                     channel string)"""
+        self._conn.execute(query)
         self._conn.commit()
 
     def get_diffs(self, since):
