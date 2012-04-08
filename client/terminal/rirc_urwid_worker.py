@@ -23,6 +23,8 @@ class RIRCWorkerThread(threading.Thread):
     QUERY = 7
     PART = 8
     CLOSE = 9
+    GET_MARK = 10
+    MARK = 11
     def __init__(self, debug = False):
         threading.Thread.__init__(self)
 
@@ -49,10 +51,12 @@ class RIRCWorkerThread(threading.Thread):
 
         self._nicks = {}
 
+        self._marks = {}
+
         context = SSL.Context()
         context.load_verify_info(cafile=str("/home/chiiph/.config/rirc/rirc.pem"))
         context.set_verify(SSL.verify_fail_if_no_peer_cert, 0)
-        proxy = xmlrpclib.ServerProxy("https://chiiph:supersecret@tldr.com.ar:4343/", allow_none = True,
+        proxy = xmlrpclib.ServerProxy("https://chiiph:supersecret@localhost:4343/", allow_none = True,
                                       transport=m2xmlrpclib.SSL_Transport(ssl_context=context))
         self._proxy = proxy
         self._stop = threading.Event()
@@ -141,8 +145,11 @@ class RIRCWorkerThread(threading.Thread):
     def stopped(self):
         return self._stop.is_set()
 
-    def _schedule(self, task, data=None):
+    def _schedule(self, task, data=None, once=False):
         self._scheduler_lock.acquire(True)
+        if once:
+            if (task, data) in self._stages:
+                self._stages.remove((task, data))
         self._stages.append((task, data))
         self._scheduler_lock.release()
 
@@ -198,6 +205,23 @@ class RIRCWorkerThread(threading.Thread):
     def close_channel(self, network, channel):
         self._schedule(self.CLOSE, (network, channel))
         self._debug("Scheduling close %s - %s" % (network, channel))
+
+    def mark(self, date, network, channel):
+        self._schedule(self.MARK, (date, network, channel))
+        self._debug("Scheduling mark %s - %s" % (network, channel))
+
+    def get_marker(self, network, channel):
+        obj = None
+        if self._read_lock.acquire(False):
+            key = network + "@" + channel
+            if key in self._marks:
+                obj = copy.deepcopy(self._marks[key])
+                del self._marks[key]
+            self._read_lock.release()
+        if not obj: # if we didn't get it this time, schedule it
+            self._schedule(self.GET_MARK, (network, channel), True)
+            self._debug("Scheduling get_mark for %s@%s" % (network, channel))
+        return obj
 
     def run(self):
         while True:
@@ -276,12 +300,21 @@ class RIRCWorkerThread(threading.Thread):
             elif stage == self.QUERY:
                 network, user = data
                 self._proxy.query(network, user)
-            elif stage ==self.PART:
+            elif stage == self.PART:
                 network, channel = data
                 self._proxy.leave(network, channel)
-            elif stage ==self.CLOSE:
+            elif stage == self.CLOSE:
                 network, channel = data
                 self._proxy.close(network, channel)
+            elif stage == self.GET_MARK:
+                network, channel = data
+                self._marks[network + "@" + channel] = \
+                    json.loads(self._proxy.get_mark(network, channel))["marker"]
+                self._debug("Mark obtained: %s" % \
+                                (self._marks[network+"@"+channel]))
+            elif stage == self.MARK:
+                date, network, channel = data
+                self._proxy.mark(date, network, channel)
             self._read_lock.release()
             time.sleep(0.1)
 

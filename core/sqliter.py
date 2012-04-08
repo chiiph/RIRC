@@ -1,4 +1,5 @@
 import sqlite3
+import time
 from os import path
 from decimal import Decimal
 from diff_consts import Diff
@@ -41,6 +42,34 @@ class SQLiter(object):
                      channel string)"""
         self._conn.execute(query)
         self._conn.commit()
+
+    def mark(self, date, network, channel):
+        query = """delete from markers where network=? and channel=?"""
+
+        self._conn.execute(query, (network.decode("utf-8"),
+                                   channel.decode("utf-8")))
+
+        query = """insert into markers(date,network,channel) values (?,?,?)"""
+
+        self._conn.execute(query, (date,
+                                   network.decode("utf-8"),
+                                   channel.decode("utf-8")))
+
+        self._conn.commit()
+        self.add_diff(time.time(), Diff.CHANGE_MARKER, network, channel, str(date))
+
+    def get_mark(self, network, channel):
+        query = """select date from markers where network=? and channel=?"""
+
+        cur = self._conn.cursor()
+        cur.execute(query, (network.decode("utf-8"),
+                            channel.decode("utf-8")))
+        mark = None
+
+        for row in cur:
+            mark = max(mark, Decimal(row[0]))
+
+        return mark
 
     def get_diffs(self, since):
         query = """select distinct * from diffs where date > ?"""

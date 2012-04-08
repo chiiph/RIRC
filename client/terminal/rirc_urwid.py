@@ -1,5 +1,6 @@
 import urwid
 import re
+import time
 
 from rirc_urwid_worker import RIRCWorkerThread
 from diff_consts import Diff
@@ -147,14 +148,11 @@ class RIRCClient(object):
         if self._bootstrap:
             data = self._worker.get_it_all()
             if not data:
-                #self._add_status("No data yet")
                 if loop:
                     self._loop.set_alarm_in(0.1, self._update)
                 return
             for network in data["networks"]:
-                #self._add_status("Network %s" % (network,))
                 for channel in data["channels"][network]:
-                    #self._add_status("Channel %s" % (channel,))
                     key = network + "@" + channel
                     lines = data["lines"][key]
                     if not (network, channel) in self._wins:
@@ -170,12 +168,19 @@ class RIRCClient(object):
                                                       self._cmd_edit, self._footer,
                                                       self._header,
                                                       highlight = nick)
-                    self._channels[key].append_new_lines(lines)
+                    marker = self._worker.get_marker(network, channel)
+                    self._channels[key].append_new_lines(lines, marker)
 
             self._bootstrap = False
             if loop:
                 self._update_buffers()
         else:
+            for network, channel in self._wins:
+                key = network + "@" + channel
+                if not self._channels[key].marked:
+                    marker = self._worker.get_marker(network, channel)
+                    if marker:
+                        self._channels[key].insert_marker(marker)
             diffs = self._worker.get_diffs()
             if diffs:
                 for diff in diffs:
@@ -196,6 +201,8 @@ class RIRCClient(object):
                                                           self._cmd_edit, self._footer,
                                                           self._header,
                                                           self._nicks[network])
+
+                        marker = self._worker.get_marker(network, channel)
                         self._channels[key].append_new_lines([(date, source, msg)])
                     elif cmd == Diff.ADD_CHANNEL:
                         self._debug(["ADD_CHANNEL %s - %s" % (diff[3], diff[4])])
@@ -203,15 +210,21 @@ class RIRCClient(object):
                         channel = diff[4]
                         if not (network, channel) in self._wins:
                             self._wins.append((network, channel))
-                        self._channels[key] = Channel(network, channel, self._worker,
-                                                      self._status_line,
-                                                      self._cmd_edit, self._footer,
-                                                      self._header,
-                                                      self._nicks[network])
+                            self._channels[key] = Channel(network, channel, self._worker,
+                                                          self._status_line,
+                                                          self._cmd_edit, self._footer,
+                                                          self._header,
+                                                          self._nicks[network])
                     elif cmd == Diff.CLOSE_CHANNEL:
                         self._debug(["CLOSE_CHANNEL %s - %s" % (diff[3], diff[4])])
                         network = diff[3]
                         channel = diff[4]
+                    elif cmd == Diff.CHANGE_MARKER:
+                        self._debug(["CLOSE_CHANNEL %s - %s" % (diff[3], diff[4])])
+                        network = diff[3]
+                        channel = diff[4]
+                        marker = diff[5]
+                        self._channels[network+"@"+channel].insert_marker(marker)
 
         if loop:
             loop.set_alarm_in(0.1, self._update)
@@ -239,6 +252,8 @@ class RIRCClient(object):
         if winid < len(self._wins) and winid >= 0:
             net = self._wins[winid][0]
             chan = self._wins[winid][1]
+            if not self._current_buffer.internal:
+                self._current_buffer.mark()
             self._channels[net+"@"+chan].switch_here(self._loop)
             self._current_buffer = self._channels[net+"@"+chan]
 
@@ -249,6 +264,8 @@ class Channel(object):
         self._name = name
         self._worker = worker
         self._widget = None
+        self._internal = (len(network) == 0)
+        self._raw_lines = []
 
         self._gui_lines = urwid.SimpleListWalker([])
         self._gui_box = urwid.ListBox(self._gui_lines)
@@ -258,12 +275,21 @@ class Channel(object):
 
         self._footer = footer
         self._header = header
+        self._marker = None
 
         self._highlight = highlight
         if isinstance(self._highlight, str):
             self._highlight = re.compile(self._highlight)
 
         self._init_gui()
+
+    def _is_marked(self):
+        return not self._marker is None
+    marked = property(_is_marked)
+
+    def _is_internal(self):
+        return self._internal
+    internal = property(_is_internal)
 
     def _init_gui(self):
         self._widget = urwid.Frame(body=self._gui_box,
@@ -283,7 +309,7 @@ class Channel(object):
         for line in lines:
             self._gui_lines.append(line)
 
-    def append_new_lines(self, lines):
+    def append_new_lines(self, lines, marker=None):
         i = len(lines)
         while i > 0:
             i -= 1
@@ -296,8 +322,23 @@ class Channel(object):
                                                               .strftime("%d/%m/%y %H:%M:%S"),),
                                                ('nick', nick),
                                                line]))
+            self._raw_lines.append((lines[i][0], lines[i][1], lines[i][2]))
+
+    def insert_marker(self, marker):
+        if self._marker: # if there already is a marker, remove it
+            self._gui_lines.remove(self._marker)
+            self._marker = None
+        self._marker = urwid.Divider("#")
+        index = 0
+        for line in self._raw_lines:
+            if line[0] > marker:
+                break
+            index += 1
+        self._gui_lines.insert(index, self._marker)
 
     def send(self, msg):
+        if len(msg.strip()) == 0:
+            return
         self._worker.send(self._network, self._name, msg.decode('utf-8').encode('utf-8'))
 
     def join(self, channel, key):
@@ -311,6 +352,9 @@ class Channel(object):
 
     def close(self):
         self._worker.close_channel(self._network, self._name)
+
+    def mark(self):
+        self._worker.mark(time.time(), self._network, self._name)
 
 if __name__ == "__main__":
     client = RIRCClient()

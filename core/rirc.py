@@ -172,9 +172,16 @@ class RIRC(XmlRpcAuth):
 
     def xmlrpc_get_diffs(self, since):
         diffs, now = self._db.get_diffs(since)
-        print diffs, now
         return json.dumps({"changes": diffs,
                            "timestamp": now})
+
+    def xmlrpc_mark(self, date, network, channel):
+        self._db.mark(date, network, channel)
+
+    def xmlrpc_get_mark(self, network, channel):
+        return json.dumps({"network": network,
+                           "channel": channel,
+                           "marker": self._db.get_mark(network, channel)})
 
 if __name__ == "__main__":
     datadir = sys.argv[1]
