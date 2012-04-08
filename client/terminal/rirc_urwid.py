@@ -296,6 +296,9 @@ class Channel(object):
                                    footer=self._footer,
                                    header=self._header)
 
+    def scroll_down(self):
+        self._gui_lines.set_focus(len(self._gui_lines)-1)
+
     def switch_here(self, mainloop):
         self._header.set_text(self._name)
         mainloop.widget = self._widget
@@ -323,6 +326,7 @@ class Channel(object):
                                                ('nick', nick),
                                                line]))
             self._raw_lines.append((lines[i][0], lines[i][1], lines[i][2]))
+        self.scroll_down()
 
     def insert_marker(self, marker):
         if self._marker: # if there already is a marker, remove it
