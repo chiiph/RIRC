@@ -226,12 +226,12 @@ class RIRCWorkerThread(threading.Thread):
     def run(self):
         while True:
             self._debug("** Starting loop")
-            if self.stopped():
-                print "Stopped..."
-                break
             self._read_lock.acquire(True)
 
             stage, data = self._get_schedule()
+            if self.stopped() and stage != self.MARK:
+                print "Stopped..."
+                break
             self._debug("Queue is: %s" % (str(self._stages)))
             self._debug("Doing: %s" % (str(tuple([stage, data]))))
             if stage == self.SEND:
