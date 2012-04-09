@@ -157,5 +157,5 @@ class SQLiter(object):
         query = """delete from data where network=? and channel=?"""
 
         self._conn.execute(query, (network, channel))
-        self.add_diff(date, Diff.CLOSE_CHANNEL, network, channel)
+        self.add_diff(time.time(), Diff.CLOSE_CHANNEL, network, channel)
         self._conn.commit()

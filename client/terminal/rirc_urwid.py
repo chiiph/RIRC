@@ -231,6 +231,8 @@ class RIRCClient(object):
                         self._debug(["CLOSE_CHANNEL %s - %s" % (diff[3], diff[4])])
                         network = diff[3]
                         channel = diff[4]
+                        del self._channels[network+"@"+channel]
+                        self._wins.remove((network,channel))
                     elif cmd == Diff.CHANGE_MARKER:
                         self._debug(["CHANGE_MARKER %s - %s" % (diff[3], diff[4])])
                         network = diff[3]
